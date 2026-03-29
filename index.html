@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>極簡記帳幫手</title>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --bg-gradient: linear-gradient(to bottom right, #f4f6fb, #e0e5ec);
+    --glass-bg: rgba(255, 255, 255, 0.65);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --text-main: #2d3748;
+    --text-light: #718096;
+    --chip-bg: rgba(255, 255, 255, 0.5);
+    --chip-active: #667eea;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background: var(--bg-gradient);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 15px;
+    color: var(--text-main);
+}
+
+/* 玻璃擬物化容器 */
+.glass-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 30px 20px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255,255,255,0.8);
+}
+
+header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+header p {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+input[type="datetime-local"],
+input[type="date"],
+input[type="number"],
+input[type="text"] {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.8);
+    font-size: 16px;
+    color: var(--text-main);
+    transition: all 0.3s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+
+input:focus {
+    outline: none;
+    border-color: #667eea;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+/* 金額特別放大 */
+.amount-group input {
+    font-size: 24px;
+    font-weight: 600;
+    padding: 16px;
+}
+
+/* 選項按鈕 (Chips) */
+.chips {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.chip {
+    position: relative;
+    cursor: pointer;
+}
+
+.chip input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.chip-label {
+    display: inline-block;
+    padding: 10px 16px;
+    border-radius: 20px;
+    background: var(--chip-bg);
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--glass-border);
+    user-select: none;
+}
+
+/* 選取狀態 */
+.chip input[type="radio"]:checked + .chip-label {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    border-color: transparent;
+    transform: translateY(-2px);
+}
+
+/* 送出按鈕 */
+button[type="submit"] {
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    background: var(--primary-gradient);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+button[type="submit"]:active {
+    transform: scale(0.98);
+}
+
+button[type="submit"]:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Loading 動畫 */
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading #btnText {
+    display: none;
+}
+.loading #btnSpinner {
+    display: block;
+}
+
+/* 吐司提示 (Toast) */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translate(-50%, 150%);
+    background: #38a169;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.toast.show {
+    transform: translate(-50%, 0);
+    opacity: 1;
+    visibility: visible;
+}
+    </style>
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>極簡記帳本</h1>
+            <p>輕鬆記錄每一筆開銷</p>
+        </header>
+
+        <form id="expenseForm">
+            <!-- 記錄時間 -->
+            <div class="form-group">
+                <label for="date">時間</label>
+                <input type="datetime-local" id="date" name="date" required>
+            </div>
+
+            <!-- 金額 -->
+            <div class="form-group amount-group">
+                <label for="amount">金額 (NT$)</label>
+                <input type="number" id="amount" name="amount" placeholder="0" min="0" required>
+            </div>
+
+            <!-- 支出方式 -->
+            <div class="form-group">
+                <label>支出方式</label>
+                <div class="chips">
+                    <label class="chip">
+                        <input type="radio" name="paymentType" value="現金" checked required>
+                        <span class="chip-label">現金</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="paymentType" value="信用卡">
+                        <span class="chip-label">信用卡</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="paymentType" value="其他">
+                        <span class="chip-label">其他</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 支出項目 -->
+            <div class="form-group">
+                <label>支出項目</label>
+                <div class="chips flex-wrap">
+                    <label class="chip">
+                        <input type="radio" name="category" value="飲食" checked required>
+                        <span class="chip-label">飲食</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="category" value="交通">
+                        <span class="chip-label">交通</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="category" value="購物">
+                        <span class="chip-label">購物</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="category" value="娛樂">
+                        <span class="chip-label">娛樂</span>
+                    </label>
+                    <label class="chip">
+                        <input type="radio" name="category" value="其他">
+                        <span class="chip-label">其他</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 備註 -->
+            <div class="form-group">
+                <label for="notes">備註</label>
+                <input type="text" id="notes" name="notes" placeholder="選填，例如：星巴克咖啡">
+            </div>
+
+            <button type="submit" id="submitBtn">
+                <span id="btnText">記錄這筆開銷</span>
+                <div class="spinner" id="btnSpinner"></div>
+            </button>
+        </form>
+
+        <div id="toast" class="toast">紀錄成功！</div>
+    </div>
+
+    <script>
+// ==========================================
+// 🚨 重要設定：請將下方的 URL 替換為您的 Web App URL
+// ==========================================
+// 您先前設定好的 URL 我已經幫您保留了：
+const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzACMWWLvvdIKXvP8ic5AFMHldXbIpBOuf0UJxbghqy8LtRhBPHf7Zem2weDLFerbhY9w/exec"; 
+
+// 取得 DOM 元素
+const form = document.getElementById('expenseForm');
+const dateInput = document.getElementById('date');
+const submitBtn = document.getElementById('submitBtn');
+const toast = document.getElementById('toast');
+
+// 設定目前日期與時間
+function setCurrentDateTime() {
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000; 
+    // 轉成 YYYY-MM-DDTHH:mm 格式（考慮時區偏移）
+    const localISOTime = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 16);
+    dateInput.value = localISOTime;
+}
+
+// 頁面載入時設定為當下時間
+document.addEventListener('DOMContentLoaded', setCurrentDateTime);
+
+// 表單提交處理
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // 檢查是否有設定 URL
+    if (!GOOGLE_APP_SCRIPT_URL || GOOGLE_APP_SCRIPT_URL.trim() === "") {
+        alert("尚未設定 Google Apps Script URL！請打開 script.js 並填上您的 Web App URL。");
+        return;
+    }
+
+    // 啟動載入狀態
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+
+    // 收集表單資料
+    const formData = new URLSearchParams();
+    // 將 T 換成空白，讓 Google Sheets 更好辨識為普通日期時間格式
+    formData.append('date', document.getElementById('date').value.replace('T', ' '));
+    formData.append('amount', document.getElementById('amount').value);
+    formData.append('paymentType', document.querySelector('input[name="paymentType"]:checked').value);
+    formData.append('category', document.querySelector('input[name="category"]:checked').value);
+    formData.append('notes', document.getElementById('notes').value);
+
+    try {
+        // 發送 POST 請求給 Google Apps Script
+        // 使用 no-cors 模式避免 Google 重新導向導致的跨網域錯誤
+        await fetch(GOOGLE_APP_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: formData
+        });
+
+        // 因為 no-cors 無法得知真實的 HTTP 狀態碼，只要網路沒斷線通常就算成功送到 Google
+        showToast("紀錄成功！");
+        
+        // 重設表單狀態並更新到最新時間
+        form.reset();
+        setCurrentDateTime();
+
+    } catch (error) {
+        console.error("提交失敗:", error);
+        alert("網路發生錯誤或傳送失敗，請稍後再試。");
+    } finally {
+        // 恢復按鈕狀態
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('loading');
+    }
+});
+
+// 顯示 Toast 提示
+function showToast(message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    
+    // 3 秒後自動隱藏
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+    </script>
+</body>
+</html>
